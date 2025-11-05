@@ -16,6 +16,7 @@ const refreshBtn = document.getElementById("refresh-btn")!;
 const disableBtn = document.getElementById("disable-btn")!;
 const enableBtn = document.getElementById("enable-btn")!;
 const analyticsBtn = document.getElementById("analytics-btn")!;
+const cameraBtn = document.getElementById("camera-btn")!;
 
 // Session context elements
 const currentTaskDisplay = document.getElementById("current-task")!;
@@ -320,4 +321,9 @@ taskInput.addEventListener("keypress", (e) => {
 // Analytics button handler - open analytics dashboard in new tab
 analyticsBtn.addEventListener("click", () => {
   chrome.tabs.create({ url: chrome.runtime.getURL("src/analytics.html") });
+});
+
+// Camera button handler - open camera tracking UI in new tab
+cameraBtn.addEventListener("click", () => {
+  chrome.tabs.create({ url: chrome.runtime.getURL("src/camera.html") });
 });

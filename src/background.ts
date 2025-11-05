@@ -4,6 +4,11 @@ import { ScreenSnapshot, SessionContext } from "./shared/types";
 import { captureActiveTab, dataUrlToBase64 } from "./screenshotCapture";
 import { verifyScreenWithVision } from "./aiClassifier";
 import { recordAnalytics, recordAlert, AnalyticsEntry } from "./analytics";
+import {
+  initAttentionDetection,
+  getCurrentAttentionState,
+  isAttentionDetectionActive,
+} from "./attentionDetector";
 
 const POLL_INTERVAL_MS = 30000; // 30 seconds - reduces AI costs significantly
 const IDLE_DETECTION_INTERVAL_SEC = 15; // chrome.idle uses seconds
@@ -274,6 +279,18 @@ Final: OFF-TASK (95% confidence)`);
       }
     }
 
+    // ATTENTION: Add attention/drowsiness state if available
+    if (isAttentionDetectionActive()) {
+      const attentionData = getCurrentAttentionState();
+      enhancedSnapshot.context!.attentionState = {
+        state: attentionData.state,
+        confidence: attentionData.metrics.earValue ? 1.0 - attentionData.metrics.earValue / 0.3 : 0.8,
+        metrics: attentionData.metrics,
+        timestamp: attentionData.timestamp,
+      };
+      console.log(`[Background] Added attention state: ${attentionData.state}`);
+    }
+
     // ANALYTICS: Record every snapshot to track focused time continuously
     const currentUrl = activeTab.url;
     const currentTitle = activeTab.title || "";
@@ -376,6 +393,12 @@ chrome.runtime.onMessage.addListener((message, sender, _sendResponse) => {
     );
   }
 
+  // Handle alert completion (drowsiness - just unlock)
+  if (message.type === "ALERT_COMPLETED") {
+    console.log("[Background] Alert completed - unlocking tabs");
+    lockedTabId = null;
+  }
+
   // Unlock tabs and close off-task tab when puzzle is completed
   if (message.type === "CLOSE_OFF_TASK_TAB") {
     console.log("[Background] Puzzle solved! Unlocking tabs and closing off-task tab");
@@ -421,7 +444,10 @@ chrome.runtime.onMessage.addListener((message, sender, _sendResponse) => {
 // Initialize network tracking
 initNetworkTracking();
 
+// Initialize attention detection
+initAttentionDetection();
+
 // Initial capture on startup
 captureAndSendSnapshot();
 
-console.log("[Background] Service worker started with network tracking");
+console.log("[Background] Service worker started with network tracking and attention detection");

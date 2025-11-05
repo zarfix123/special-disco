@@ -118,8 +118,10 @@ function playAlarmSound() {
 
 /**
  * Shows fullscreen red alert overlay with BRUTAL wake-up mechanics
+ * @param snapshot - The screen snapshot that triggered the alert
+ * @param isDrowsiness - If true, this is a drowsiness alert (don't close tab after solving)
  */
-function showOffTaskAlert(snapshot: ScreenSnapshot) {
+function showOffTaskAlert(snapshot: ScreenSnapshot, isDrowsiness = false) {
   // Don't create duplicate alerts
   if (alertElement) return;
 
@@ -376,13 +378,19 @@ function showOffTaskAlert(snapshot: ScreenSnapshot) {
     const correctAnswer = puzzle.answer.toLowerCase();
 
     if (userAnswer === correctAnswer) {
-      // SUCCESS! Close this tab and switch to last on-task tab
+      // SUCCESS!
       clearInterval(alarmInterval);
       alertElement?.remove();
       alertElement = null;
 
-      // Tell background to unlock tabs and close this one
-      chrome.runtime.sendMessage({ type: "CLOSE_OFF_TASK_TAB" });
+      if (isDrowsiness) {
+        // For drowsiness: just unlock tabs, keep current tab open
+        chrome.runtime.sendMessage({ type: "ALERT_COMPLETED" });
+        console.log("[Content Script] ✅ Drowsiness alert solved - staying on current tab");
+      } else {
+        // For off-task: close this tab and switch to last on-task tab
+        chrome.runtime.sendMessage({ type: "CLOSE_OFF_TASK_TAB" });
+      }
     } else {
       // WRONG! Try again
       if (captchaError) {
@@ -416,6 +424,32 @@ function showOffTaskAlert(snapshot: ScreenSnapshot) {
 
 // Listen for messages from the background script
 chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
+  if (message.type === "DROWSINESS_ALERT") {
+    // Handle drowsiness alert - show puzzle but DON'T close tab
+    console.log("[Content Script] 🚨 DROWSINESS ALERT TRIGGERED:", message.payload);
+
+    // Show alert with drowsiness-specific message
+    const drowsinessSnapshot = {
+      state: "off_task" as const,
+      confidence: message.payload.confidence || 0.9,
+      t: Date.now(),
+      context: {
+        visualVerification: {
+          verified: false,
+          isOffTask: true,
+          confidence: message.payload.confidence || 0.9,
+          detectedContent: `Drowsiness detected: ${message.payload.state}`,
+          reasoning: `Eyes closed for ${message.payload.metrics?.eyesClosedDuration?.toFixed(1)}s. Wake up!`,
+          recommendation: "focus" as const,
+        },
+      },
+    };
+
+    // Show alert immediately
+    showOffTaskAlert(drowsinessSnapshot, true); // true = drowsiness mode (don't close tab)
+    return;
+  }
+
   if (message.type === "SCREEN_SNAPSHOT") {
     const snapshot = message.payload as ScreenSnapshot;
 
