@@ -15,9 +15,10 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@crxjs/vite-plugin": "^2.2.1",
     "@eslint/eslintrc": "^3",
     "@types/chrome": "^0.1.27",
-    "@types/node": "^22",
+    "@types/node": "^22.19.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.20",
@@ -25,6 +26,7 @@
     "eslint-config-next": "^15.1.6",
     "postcss": "^8",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^7.2.0"
   }
 }
