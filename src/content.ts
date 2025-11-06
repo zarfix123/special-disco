@@ -132,35 +132,93 @@ function showOffTaskAlert(snapshot: ScreenSnapshot, isDrowsiness = false) {
 
   alertElement = document.createElement("div");
   alertElement.id = "focus-tracker-alert";
-  alertElement.innerHTML = `
-    <div class="focus-alert-content">
-      <div class="focus-alert-icon">🚨</div>
-      <h1 class="focus-alert-title">OFF TASK DETECTED</h1>
-      <p class="focus-alert-message">
-        ${snapshot.context?.visualVerification?.detectedContent || "STOP SLACKING OFF!"}
-      </p>
-      <div class="focus-alert-details">
-        ${snapshot.context?.visualVerification?.reasoning || "You are wasting time!"}
-      </div>
-      <div id="wake-up-challenge">
-        <p class="challenge-text">Click "I'M AWAKE" ${requiredClicks} times to continue:</p>
-        <p class="click-counter" id="click-counter">0 / ${requiredClicks}</p>
-        <button id="focus-alert-click" class="focus-alert-btn pulse-btn">
-          I'M AWAKE!
-        </button>
-      </div>
-      <div id="captcha-challenge" style="display: none;">
-        <p class="challenge-text">Solve this to prove you're conscious:</p>
-        <p class="puzzle-type-badge">${puzzle.type.toUpperCase()}</p>
-        <p class="math-problem">${puzzle.question}</p>
-        <input type="text" id="captcha-input" class="captcha-input" placeholder="Answer">
-        <button id="captcha-submit" class="focus-alert-btn">
-          SUBMIT
-        </button>
-        <p id="captcha-error" class="captcha-error"></p>
-      </div>
-    </div>
-  `;
+
+  const alertContent = document.createElement("div");
+  alertContent.className = "focus-alert-content";
+
+  const alertIcon = document.createElement("div");
+  alertIcon.className = "focus-alert-icon";
+  alertIcon.textContent = "🚨";
+
+  const alertTitle = document.createElement("h1");
+  alertTitle.className = "focus-alert-title";
+  alertTitle.textContent = "OFF TASK DETECTED";
+
+  const alertMessage = document.createElement("p");
+  alertMessage.className = "focus-alert-message";
+  alertMessage.textContent = snapshot.context?.visualVerification?.detectedContent || "STOP SLACKING OFF!";
+
+  const alertDetails = document.createElement("div");
+  alertDetails.className = "focus-alert-details";
+  alertDetails.textContent = snapshot.context?.visualVerification?.reasoning || "You are wasting time!";
+
+  const wakeUpChallenge = document.createElement("div");
+  wakeUpChallenge.id = "wake-up-challenge";
+
+  const challengeText = document.createElement("p");
+  challengeText.className = "challenge-text";
+  challengeText.textContent = `Click "I'M AWAKE" ${requiredClicks} times to continue:`;
+
+  const clickCounter = document.createElement("p");
+  clickCounter.className = "click-counter";
+  clickCounter.id = "click-counter";
+  clickCounter.textContent = `0 / ${requiredClicks}`;
+
+  const focusAlertButton = document.createElement("button");
+  focusAlertButton.id = "focus-alert-click";
+  focusAlertButton.className = "focus-alert-btn pulse-btn";
+  focusAlertButton.textContent = "I'M AWAKE!";
+
+  wakeUpChallenge.appendChild(challengeText);
+  wakeUpChallenge.appendChild(clickCounter);
+  wakeUpChallenge.appendChild(focusAlertButton);
+
+  const captchaChallenge = document.createElement("div");
+  captchaChallenge.id = "captcha-challenge";
+  captchaChallenge.style.display = "none";
+
+  const captchaChallengeText = document.createElement("p");
+  captchaChallengeText.className = "challenge-text";
+  captchaChallengeText.textContent = "Solve this to prove you're conscious:";
+
+  const puzzleTypeBadge = document.createElement("p");
+  puzzleTypeBadge.className = "puzzle-type-badge";
+  puzzleTypeBadge.textContent = puzzle.type.toUpperCase();
+
+  const mathProblem = document.createElement("p");
+  mathProblem.className = "math-problem";
+  mathProblem.textContent = puzzle.question;
+
+  const captchaInput = document.createElement("input");
+  captchaInput.type = "text";
+  captchaInput.id = "captcha-input";
+  captchaInput.className = "captcha-input";
+  captchaInput.placeholder = "Answer";
+
+  const captchaSubmit = document.createElement("button");
+  captchaSubmit.id = "captcha-submit";
+  captchaSubmit.className = "focus-alert-btn";
+  captchaSubmit.textContent = "SUBMIT";
+
+  const captchaError = document.createElement("p");
+  captchaError.id = "captcha-error";
+  captchaError.className = "captcha-error";
+
+  captchaChallenge.appendChild(captchaChallengeText);
+  captchaChallenge.appendChild(puzzleTypeBadge);
+  captchaChallenge.appendChild(mathProblem);
+  captchaChallenge.appendChild(captchaInput);
+  captchaChallenge.appendChild(captchaSubmit);
+  captchaChallenge.appendChild(captchaError);
+
+  alertContent.appendChild(alertIcon);
+  alertContent.appendChild(alertTitle);
+  alertContent.appendChild(alertMessage);
+  alertContent.appendChild(alertDetails);
+  alertContent.appendChild(wakeUpChallenge);
+  alertContent.appendChild(captchaChallenge);
+
+  alertElement.appendChild(alertContent);
 
   // Inject styles
   const style = document.createElement("style");
@@ -484,7 +542,7 @@ chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
         type: "SCREEN_SNAPSHOT",
         payload: snapshot,
       },
-      "*"
+      window.location.origin
     );
     console.log("[Content Script] Forwarded SCREEN_SNAPSHOT to page");
 
@@ -548,7 +606,7 @@ window.addEventListener("message", async (event) => {
           type: "SCREEN_SNAPSHOT",
           payload: snapshot,
         },
-        "*"
+        window.location.origin
       );
       console.log("[Content Script] Sent stored snapshot to page");
     } else {

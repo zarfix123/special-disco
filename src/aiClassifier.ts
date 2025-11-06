@@ -96,8 +96,28 @@ Return ONLY a JSON array (no markdown, no extra text), one object per domain:
     const data = await response.json();
     const content = data.content[0].text;
 
-    // Parse JSON response
-    const classifications = JSON.parse(content) as DomainClassification[];
+    // Parse JSON response with validation
+    let classifications: DomainClassification[];
+    try {
+      const parsed = JSON.parse(content);
+
+      // Validate structure
+      if (!Array.isArray(parsed)) {
+        throw new Error("Expected array of classifications");
+      }
+
+      // Validate each item has required fields
+      classifications = parsed.filter(item => {
+        if (typeof item.domain !== 'string' || typeof item.category !== 'string') {
+          console.warn("[AI Classifier] Invalid classification item:", item);
+          return false;
+        }
+        return true;
+      });
+    } catch (parseError) {
+      console.error("[AI Classifier] Invalid JSON response:", parseError);
+      return [];
+    }
 
     console.log("[AI Classifier] Classifications:", classifications);
     return classifications;
@@ -277,8 +297,38 @@ Recommendation values:
       .replace(/```\n?/g, "")
       .trim();
 
-    // Parse JSON response
-    const verification = JSON.parse(cleanedContent) as VisualVerification;
+    // Parse JSON response with validation
+    let verification: VisualVerification;
+    try {
+      const parsed = JSON.parse(cleanedContent);
+
+      // Validate required fields
+      if (typeof parsed.isOffTask !== 'boolean' ||
+          typeof parsed.confidence !== 'number' ||
+          typeof parsed.reasoning !== 'string' ||
+          typeof parsed.detectedContent !== 'string' ||
+          typeof parsed.recommendation !== 'string') {
+        throw new Error("Invalid vision verification structure");
+      }
+
+      // Validate recommendation value
+      const validRecommendations = ['focus', 'warning', 'ok'];
+      if (!validRecommendations.includes(parsed.recommendation)) {
+        console.warn("[AI Vision] Invalid recommendation:", parsed.recommendation);
+        parsed.recommendation = 'ok'; // Safe default
+      }
+
+      verification = parsed as VisualVerification;
+    } catch (parseError) {
+      console.error("[AI Vision] Invalid JSON response:", parseError);
+      return {
+        isOffTask: false,
+        confidence: 0,
+        reasoning: "Failed to parse vision API response",
+        detectedContent: "Parse error",
+        recommendation: "ok",
+      };
+    }
 
     console.log("[AI Vision] Gemini verification result:", verification);
     return verification;
