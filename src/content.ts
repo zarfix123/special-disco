@@ -409,30 +409,30 @@ function showOffTaskAlert(snapshot: ScreenSnapshot, isDrowsiness = false) {
 
   // Handle "I'M AWAKE" button clicks
   const clickBtn = document.getElementById("focus-alert-click");
-  const clickCounter = document.getElementById("click-counter");
-  const wakeUpChallenge = document.getElementById("wake-up-challenge");
-  const captchaChallenge = document.getElementById("captcha-challenge");
+  const clickCounterEl = document.getElementById("click-counter");
+  const wakeUpChallengeEl = document.getElementById("wake-up-challenge");
+  const captchaChallengeEl = document.getElementById("captcha-challenge");
 
   clickBtn?.addEventListener("click", () => {
     clickCount++;
-    if (clickCounter) {
-      clickCounter.textContent = `${clickCount} / ${requiredClicks}`;
+    if (clickCounterEl) {
+      clickCounterEl.textContent = `${clickCount} / ${requiredClicks}`;
     }
 
     if (clickCount >= requiredClicks) {
       // Move to captcha challenge
-      if (wakeUpChallenge) wakeUpChallenge.style.display = "none";
-      if (captchaChallenge) captchaChallenge.style.display = "block";
+      if (wakeUpChallengeEl) wakeUpChallengeEl.style.display = "none";
+      if (captchaChallengeEl) captchaChallengeEl.style.display = "block";
     }
   });
 
   // Handle captcha submission
-  const captchaSubmit = document.getElementById("captcha-submit");
-  const captchaInput = document.getElementById("captcha-input") as HTMLInputElement;
-  const captchaError = document.getElementById("captcha-error");
+  const captchaSubmitBtn = document.getElementById("captcha-submit");
+  const captchaInputEl = document.getElementById("captcha-input") as HTMLInputElement;
+  const captchaErrorEl = document.getElementById("captcha-error");
 
   const checkCaptcha = () => {
-    const userAnswer = (captchaInput?.value || "").trim().toLowerCase();
+    const userAnswer = (captchaInputEl?.value || "").trim().toLowerCase();
     const correctAnswer = puzzle.answer.toLowerCase();
 
     if (userAnswer === correctAnswer) {
@@ -451,18 +451,18 @@ function showOffTaskAlert(snapshot: ScreenSnapshot, isDrowsiness = false) {
       }
     } else {
       // WRONG! Try again
-      if (captchaError) {
-        captchaError.textContent = "WRONG! Try again and WAKE UP!";
+      if (captchaErrorEl) {
+        captchaErrorEl.textContent = "WRONG! Try again and WAKE UP!";
       }
-      if (captchaInput) {
-        captchaInput.value = "";
-        captchaInput.focus();
+      if (captchaInputEl) {
+        captchaInputEl.value = "";
+        captchaInputEl.focus();
       }
     }
   };
 
-  captchaSubmit?.addEventListener("click", checkCaptcha);
-  captchaInput?.addEventListener("keypress", (e) => {
+  captchaSubmitBtn?.addEventListener("click", checkCaptcha);
+  captchaInputEl?.addEventListener("keypress", (e) => {
     if (e.key === "Enter") {
       checkCaptcha();
     }
