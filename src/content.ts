@@ -485,53 +485,7 @@ function showOffTaskAlert(snapshot: ScreenSnapshot, isDrowsiness = false) {
 
 // Listen for messages from the background script
 chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
-  if (message.type === "DROWSINESS_DETECTED") {
-    // Direct drowsiness detection from camera
-    const drowsinessSnapshot = {
-      state: "off_task" as const,
-      confidence: message.payload.confidence || 0.9,
-      t: Date.now(),
-      context: {
-        visualVerification: {
-          verified: false,
-          isOffTask: true,
-          confidence: message.payload.confidence || 0.9,
-          detectedContent: `Drowsiness detected: ${message.payload.state}`,
-          reasoning: `Eyes closed for ${message.payload.metrics?.eyesClosedDuration?.toFixed(1)}s. Wake up!`,
-          recommendation: "focus" as const,
-        },
-      },
-    };
-
-    showOffTaskAlert(drowsinessSnapshot, true); // true = drowsiness mode
-    return;
-  }
-
-  if (message.type === "DROWSINESS_ALERT") {
-    // Handle drowsiness alert - show puzzle but DON'T close tab
-    console.log("[Content Script] 🚨 DROWSINESS ALERT TRIGGERED:", message.payload);
-
-    // Show alert with drowsiness-specific message
-    const drowsinessSnapshot = {
-      state: "off_task" as const,
-      confidence: message.payload.confidence || 0.9,
-      t: Date.now(),
-      context: {
-        visualVerification: {
-          verified: false,
-          isOffTask: true,
-          confidence: message.payload.confidence || 0.9,
-          detectedContent: `Drowsiness detected: ${message.payload.state}`,
-          reasoning: `Eyes closed for ${message.payload.metrics?.eyesClosedDuration?.toFixed(1)}s. Wake up!`,
-          recommendation: "focus" as const,
-        },
-      },
-    };
-
-    // Show alert immediately
-    showOffTaskAlert(drowsinessSnapshot, true); // true = drowsiness mode (don't close tab)
-    return;
-  }
+  // Camera/drowsiness detection removed - no DROWSINESS_ALERT or DROWSINESS_DETECTED handlers
 
   if (message.type === "SCREEN_SNAPSHOT") {
     const snapshot = message.payload as ScreenSnapshot;

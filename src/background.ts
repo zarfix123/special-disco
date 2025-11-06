@@ -9,90 +9,10 @@ import {
   getCurrentAttentionState,
   isAttentionDetectionActive,
 } from "./attentionDetector";
-import { getTrackingSettings } from "./trackingSettings";
 
 const POLL_INTERVAL_MS = 30000; // 30 seconds - reduces AI costs significantly
 const IDLE_DETECTION_INTERVAL_SEC = 15; // chrome.idle uses seconds
 const VISION_CHECK_INTERVAL = 2; // Run vision AI every 2nd check (60 seconds)
-
-// Offscreen document for camera detection
-let offscreenDocumentCreated = false;
-
-/**
- * Create offscreen document for camera detection
- */
-async function createOffscreenDocument(): Promise<void> {
-  if (offscreenDocumentCreated) {
-    console.log("[Background] Offscreen document already exists");
-    return;
-  }
-
-  try {
-    await chrome.offscreen.createDocument({
-      url: chrome.runtime.getURL("src/offscreen.html"),
-      reasons: [chrome.offscreen.Reason.USER_MEDIA],
-      justification: "Camera access for drowsiness detection"
-    });
-    offscreenDocumentCreated = true;
-    console.log("[Background] ✓ Offscreen document created");
-  } catch (error) {
-    console.error("[Background] Failed to create offscreen document:", error);
-    throw error;
-  }
-}
-
-/**
- * Close offscreen document
- */
-async function closeOffscreenDocument(): Promise<void> {
-  if (!offscreenDocumentCreated) return;
-
-  try {
-    await chrome.offscreen.closeDocument();
-    offscreenDocumentCreated = false;
-    console.log("[Background] Offscreen document closed");
-  } catch (error) {
-    console.error("[Background] Failed to close offscreen document:", error);
-  }
-}
-
-/**
- * Initialize camera detection via offscreen document
- */
-async function initCameraDetection(): Promise<void> {
-  try {
-    console.log("[Background] Initializing camera detection...");
-
-    // Create offscreen document if needed
-    await createOffscreenDocument();
-
-    // Tell offscreen document to start camera
-    const response = await chrome.runtime.sendMessage({ type: "START_CAMERA_DETECTION" });
-
-    if (response?.success) {
-      console.log("[Background] ✓ Camera detection started in offscreen document");
-    } else {
-      console.error("[Background] Failed to start camera detection:", response?.error);
-    }
-  } catch (error) {
-    console.error("[Background] Camera detection init failed:", error);
-  }
-}
-
-/**
- * Stop camera detection
- */
-async function stopCameraDetection(): Promise<void> {
-  try {
-    if (offscreenDocumentCreated) {
-      await chrome.runtime.sendMessage({ type: "STOP_CAMERA_DETECTION" });
-      await closeOffscreenDocument();
-      console.log("[Background] Camera detection stopped");
-    }
-  } catch (error) {
-    console.error("[Background] Failed to stop camera detection:", error);
-  }
-}
 
 // Analytics tracking - track page visit duration
 let lastPageUrl: string | null = null;
@@ -454,56 +374,11 @@ chrome.tabs.onActivated.addListener(() => {
 
 // Listen for messages from content script
 chrome.runtime.onMessage.addListener((message, sender, _sendResponse) => {
-  // Handle drowsiness detection from offscreen document
-  if (message.type === "DROWSINESS_DETECTED") {
-    console.log("[Background] Drowsiness detected from offscreen document:", message.payload);
-
-    // Forward to all tabs' content scripts
-    chrome.tabs.query({}, (tabs) => {
-      tabs.forEach((tab) => {
-        if (tab.id) {
-          chrome.tabs.sendMessage(tab.id, message).catch(() => {
-            // Ignore errors for tabs that don't have content script
-          });
-        }
-      });
-    });
-  }
-
-  // Handle attention updates from offscreen document
-  if (message.type === "ATTENTION_UPDATE") {
-    // Could store these for analytics or forward to camera settings page
-    // For now, just log occasionally
-  }
-
-  // Handle camera detection ready notification
-  if (message.type === "CAMERA_DETECTION_READY") {
-    console.log("[Background] Camera detection is ready and running");
-  }
-
   // Handle tracking settings updates
   if (message.type === "TRACKING_SETTINGS_UPDATED") {
     const settings = message.payload;
     console.log("[Background] Tracking settings updated:", settings);
-
-    if (settings.cameraTrackingEnabled) {
-      initCameraDetection();
-    } else {
-      stopCameraDetection();
-    }
-  }
-
-  // Forward GET_CAMERA_STATUS requests to offscreen document
-  if (message.type === "GET_CAMERA_STATUS") {
-    if (offscreenDocumentCreated) {
-      // Forward message to offscreen document and return its response
-      chrome.runtime.sendMessage(message).then(_sendResponse).catch(() => {
-        _sendResponse({ isRunning: false, frameCount: 0 });
-      });
-      return true; // Keep channel open for async response
-    } else {
-      _sendResponse({ isRunning: false, frameCount: 0 });
-    }
+    // Camera tracking removed - no action needed
   }
 
   // Alert triggered - no longer locking tabs
@@ -560,16 +435,6 @@ initNetworkTracking();
 
 // Initialize attention detection
 initAttentionDetection();
-
-// Initialize camera detection if enabled
-getTrackingSettings().then((settings) => {
-  if (settings.cameraTrackingEnabled) {
-    console.log("[Background] Camera tracking is enabled, starting detection...");
-    initCameraDetection();
-  } else {
-    console.log("[Background] Camera tracking is disabled");
-  }
-});
 
 // Initial capture on startup
 captureAndSendSnapshot();

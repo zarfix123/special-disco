@@ -16,7 +16,6 @@ const refreshBtn = document.getElementById("refresh-btn")!;
 const disableBtn = document.getElementById("disable-btn")!;
 const enableBtn = document.getElementById("enable-btn")!;
 const analyticsBtn = document.getElementById("analytics-btn")!;
-const cameraBtn = document.getElementById("camera-btn")!;
 
 // Session context elements
 const currentTaskDisplay = document.getElementById("current-task")!;
@@ -323,35 +322,28 @@ analyticsBtn.addEventListener("click", () => {
   chrome.tabs.create({ url: chrome.runtime.getURL("src/analytics.html") });
 });
 
-// Camera button handler - open camera tracking UI in new tab
-cameraBtn.addEventListener("click", () => {
-  chrome.tabs.create({ url: chrome.runtime.getURL("src/camera.html") });
-});
-
 // Load tracking settings and add toggle handlers
 import { getTrackingSettings, saveTrackingSettings } from "./trackingSettings";
 import { TrackingSettings } from "./shared/types";
 
 // Check if we have tracking toggle elements (newer UI)
 const webTrackingToggle = document.getElementById("web-tracking-toggle") as HTMLInputElement | null;
-const cameraTrackingToggle = document.getElementById("camera-tracking-toggle") as HTMLInputElement | null;
 
-if (webTrackingToggle && cameraTrackingToggle) {
+if (webTrackingToggle) {
   // Initialize tracking settings
   getTrackingSettings().then(settings => {
-    if (webTrackingToggle && cameraTrackingToggle) {
+    if (webTrackingToggle) {
       webTrackingToggle.checked = settings.webTrackingEnabled;
-      cameraTrackingToggle.checked = settings.cameraTrackingEnabled;
     }
   });
 
   // Save settings when changed
   async function saveTrackingToggles() {
-    if (!webTrackingToggle || !cameraTrackingToggle) return;
+    if (!webTrackingToggle) return;
 
     const settings: TrackingSettings = {
       webTrackingEnabled: webTrackingToggle.checked,
-      cameraTrackingEnabled: cameraTrackingToggle.checked,
+      cameraTrackingEnabled: false, // Camera tracking removed
     };
 
     await saveTrackingSettings(settings);
@@ -365,39 +357,4 @@ if (webTrackingToggle && cameraTrackingToggle) {
   }
 
   webTrackingToggle.addEventListener("change", saveTrackingToggles);
-  cameraTrackingToggle.addEventListener("change", saveTrackingToggles);
 }
-
-// Live camera status display
-const cameraStatusElement = document.getElementById("camera-status");
-
-async function updateCameraStatus() {
-  if (!cameraStatusElement) return;
-
-  try {
-    // Query the offscreen document for camera status
-    const response = await chrome.runtime.sendMessage({ type: "GET_CAMERA_STATUS" });
-
-    if (response?.isRunning) {
-      cameraStatusElement.textContent = `Active (${response.frameCount || 0} frames)`;
-      cameraStatusElement.style.color = "#10b981"; // green
-    } else {
-      const settings = await getTrackingSettings();
-      if (settings.cameraTrackingEnabled) {
-        cameraStatusElement.textContent = "Ready (toggle on to start)";
-        cameraStatusElement.style.color = "#6b7280"; // gray
-      } else {
-        cameraStatusElement.textContent = "Drowsiness detection";
-        cameraStatusElement.style.color = "#6b7280"; // gray
-      }
-    }
-  } catch (error) {
-    // Offscreen document might not be created yet
-    cameraStatusElement.textContent = "Drowsiness detection";
-    cameraStatusElement.style.color = "#6b7280";
-  }
-}
-
-// Update camera status on load and every 2 seconds
-updateCameraStatus();
-setInterval(updateCameraStatus, 2000);

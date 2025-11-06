@@ -1,16 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "Focus Tracker with Drowsiness Detection",
+  "name": "Focus Tracker",
   "version": "1.0.0",
-  "description": "Tracks screen activity + webcam-based drowsiness detection to keep you focused",
+  "description": "Tracks screen activity with AI-powered focus detection to keep you productive",
   "permissions": [
     "tabs",
     "idle",
     "storage",
     "webRequest",
     "activeTab",
-    "scripting",
-    "offscreen"
+    "scripting"
   ],
   "host_permissions": [
     "<all_urls>"
