@@ -5,7 +5,6 @@
  */
 
 const fs = require('fs');
-const path = require('path');
 
 // Since we can't easily convert SVG to PNG without additional deps,
 // let's create a simple solid color version that will work
